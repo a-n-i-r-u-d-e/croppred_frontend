@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroSathi - Crop Recommendation</title>
+    <!-- Google Font for a modern look -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- CSS STYLES --- */
+        
+        /* --- Global Styles and Typography --- */
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%); /* Soft Gradient Background */
+            color: #263238;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            width: 100%;
+            max-width: 900px;
+            position: relative;
+        }
+
+        h1 {
+            color: #004d40; /* Dark Teal */
+            font-weight: 700;
+            font-size: 2.5em;
+            margin-bottom: 5px;
+        }
+
+        h2 {
+            color: #00695c;
+            border-bottom: 2px solid #e0f2f1;
+            padding-bottom: 10px;
+            margin-top: 0;
+            font-weight: 600;
+        }
+
+        .tagline {
+            font-weight: 300;
+            color: #4db6ac;
+            font-size: 1.1em;
+        }
+        
+        /* Language Selector */
+        .language-selector {
+            position: absolute;
+            top: 10px;
+            right: 0;
+            padding: 8px 12px;
+            border: 1px solid #b2dfdb;
+            border-radius: 8px;
+            background: #ffffff;
+            font-size: 0.9em;
+            color: #004d40;
+            cursor: pointer;
+        }
+
+        /* --- Layout and Structure --- */
+        .container {
+            display: grid;
+            grid-template-columns: 1fr; /* Single column for mobile */
+            gap: 30px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                grid-template-columns: 1fr 1fr; /* Two columns on larger screens */
+            }
+        }
+
+        .card {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            /* Apply transition to all properties for smooth changes */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px); /* Subtle lift on hover */
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        /* --- Form and Input Styling --- */
+        #manual-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #004d40;
+        }
+
+        .input-group input {
+            padding: 12px;
+            border: 1px solid #b2dfdb;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .input-group input:focus {
+            border-color: #009688;
+            outline: none;
+            box-shadow: 0 0 5px rgba(0, 150, 136, 0.5);
+        }
+
+        /* --- Button Styles with Transition --- */
+        .primary-btn, .secondary-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.05em;
+            letter-spacing: 0.5px;
+            transition: background-color 0.3s ease, transform 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .primary-btn {
+            background-color: #4caf50; /* Green */
+            color: #fff;
+        }
+
+        .primary-btn:hover {
+            background-color: #388e3c;
+            transform: translateY(-2px);
+        }
+
+        .secondary-btn {
+            background-color: #009688; /* Teal */
+            color: #fff;
+        }
+
+        .secondary-btn:hover {
+            background-color: #00796b;
+            transform: translateY(-2px);
+        }
+        
+        .gemini-btn {
+            background-color: transparent;
+            color: #00695c;
+            border: 1px solid #00695c;
+            padding: 6px 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+            border-radius: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .gemini-btn:hover {
+            background-color: #e0f2f1;
+            color: #004d40;
+        }
+
+        .action-area {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        /* --- Result Box and Visibility (Smooth Transition) --- */
+        .result-box {
+            margin-top: 20px;
+            padding: 20px;
+            background: #e8f5e9; /* Very light green background */
+            border-left: 5px solid #4caf50;
+            border-radius: 8px;
+            line-height: 1.6;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: opacity 0.5s ease-in-out, max-height 0.5s ease-in-out, padding 0.5s ease;
+        }
+
+        .result-box.visible {
+            opacity: 1;
+            max-height: 500px; /* Large enough value to reveal content */
+            padding: 20px;
+        }
+
+        .hidden {
+            display: none; /* Initial state before result is ready */
+        }
+
+        /* --- Fade-In Entrance Animation --- */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            opacity: 0;
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        .delay-1 {
+            animation-delay: 0.1s;
+        }
+
+        /* --- New CSS for Loading Animation --- */
+        .loader {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4caf50;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* --- New CSS for Staggered Crop List --- */
+        .crop-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .crop-item {
+            background-color: #b2dfdb;
+            color: #004d40;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: fadeInUp 0.5s ease-out forwards;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .crop-item button {
+            cursor: pointer;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* New styling for Gemini result box */
+        #gemini-result {
+            margin-top: 30px;
+            background: #ffffff;
+            border-left: 5px solid #009688;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            line-height: 1.6;
+            white-space: pre-wrap; /* Preserve whitespace and line breaks for markdown */
+        }
+        
+        #gemini-result h4 {
+            color: #00695c;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        
+        #gemini-result p {
+            margin: 0 0 1em;
+        }
+        
+        #gemini-result ul, #gemini-result ol {
+            padding-left: 20px;
+        }
+        
+        #gemini-result li {
+            margin-bottom: 0.5em;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <select id="language-selector" class="language-selector">
+            <option value="en">English</option>
+            <option value="hi">हिंदी</option>
+            <option value="bn">বাংলা</option>
+        </select>
+        <h1 data-translate="headerTitle">🌾 AgroSathi - Intelligent Crop Recommendation</h1>
+        <p class="tagline" data-translate="headerTagline">Harnessing data for sustainable farming.</p>
+    </header>
+
+    <main class="container">
+        <!-- Section: Auto Detect -->
+        <section id="auto-section" class="card fade-in">
+            <h2 data-translate="autoDetectHeading">🌍 Auto-Detect Parameters</h2>
+            <p data-translate="autoDetectText">Get instant recommendations based on your current location's weather and estimated soil data.</p>
+            <div class="action-area">
+                <button id="auto-btn" class="primary-btn" data-translate="autoDetectBtn">
+                    Detect & Predict <span class="icon">🚀</span>
+                </button>
+            </div>
+            <div id="auto-result" class="result-box hidden"></div>
+        </section>
+
+        <!-- Section: Manual Entry -->
+        <section id="manual-section" class="card fade-in delay-1">
+            <h2 data-translate="manualEntryHeading">✍️ Manual Soil Entry</h2>
+            <p data-translate="manualEntryText">Enter your precise soil test data (N, P, K, pH) for a tailored recommendation.</p>
+            <form id="manual-form">
+                <div class="input-group">
+                    <label for="N" data-translate="labelN">Nitrogen (N)</label>
+                    <input type="number" id="N" required data-placeholder="placeholderN">
+                </div>
+                <div class="input-group">
+                    <label for="P" data-translate="labelP">Phosphorus (P)</label>
+                    <input type="number" id="P" required data-placeholder="placeholderP">
+                </div>
+                <div class="input-group">
+                    <label for="K" data-translate="labelK">Potassium (K)</label>
+                    <input type="number" id="K" required data-placeholder="placeholderK">
+                </div>
+                <div class="input-group">
+                    <label for="ph" data-translate="labelPh">pH</label>
+                    <input type="number" step="0.1" id="ph" required data-placeholder="placeholderPh">
+                </div>
+                <button type="submit" class="secondary-btn" data-translate="manualEntryBtn">
+                    Predict Crops <span class="icon">🌱</span>
+                </button>
+            </form>
+            <div id="manual-result" class="result-box hidden"></div>
+        </section>
+    </main>
+    
+    <!-- New Section for Gemini API Output -->
+    <section id="gemini-output" class="card fade-in delay-2 hidden">
+        <div id="gemini-result"></div>
+    </section>
+
+    <script>
+        // --- JAVASCRIPT LOGIC ---
+        
+        document.addEventListener("DOMContentLoaded", () => {
+            const API_BASE = "http://127.0.0.1:5000"; // Flask backend
+            const autoBtn = document.getElementById("auto-btn");
+            const autoResult = document.getElementById("auto-result");
+            const manualForm = document.getElementById("manual-form");
+            const manualResult = document.getElementById("manual-result");
+            const geminiOutputSection = document.getElementById("gemini-output");
+            const geminiResult = document.getElementById("gemini-result");
+            const langSelector = document.getElementById("language-selector");
+            const translations = {
+                'en': {
+                    headerTitle: '🌾 AgroSathi - Intelligent Crop Recommendation',
+                    headerTagline: 'Harnessing data for sustainable farming.',
+                    autoDetectHeading: '🌍 Auto-Detect Parameters',
+                    autoDetectText: "Get instant recommendations based on your current location's weather and estimated soil data.",
+                    autoDetectBtn: 'Detect & Predict',
+                    manualEntryHeading: '✍️ Manual Soil Entry',
+                    manualEntryText: 'Enter your precise soil test data (N, P, K, pH) for a tailored recommendation.',
+                    labelN: 'Nitrogen (N)',
+                    labelP: 'Phosphorus (P)',
+                    labelK: 'Potassium (K)',
+                    labelPh: 'pH',
+                    placeholderN: 'e.g., 90',
+                    placeholderP: 'e.g., 42',
+                    placeholderK: 'e.g., 43',
+                    placeholderPh: 'e.g., 6.5',
+                    manualEntryBtn: 'Predict Crops',
+                    loadingText: 'Predicting crops...',
+                    recommendationHeading: '✅ Recommended Crops:',
+                    inputParameters: 'Input Parameters:',
+                    locationLabel: 'Location',
+                    tempLabel: 'Temp',
+                    humidityLabel: 'Humidity',
+                    rainfallLabel: 'Rainfall',
+                    soilData: 'Soil Data',
+                    careGuideBtn: 'Get Care Guide ✨',
+                    geminiLoading: 'Generating a care guide for',
+                    geminiError: 'Failed to generate content. Please try again.',
+                    geminiUnexpectedError: 'An unexpected error occurred:',
+                    apiError: 'Could not connect to the server or retrieve data.',
+                    manualApiError: 'Could not connect to the server or get prediction.'
+                },
+                'hi': {
+                    headerTitle: '🌾 एग्रोसाथी - स्मार्ट फसल अनुशंसा',
+                    headerTagline: 'टिकाऊ खेती के लिए डेटा का उपयोग।',
+                    autoDetectHeading: '🌍 स्वचालित पैरामीटर',
+                    autoDetectText: "अपने वर्तमान स्थान के मौसम और अनुमानित मिट्टी के डेटा के आधार पर तुरंत सिफारिशें प्राप्त करें।",
+                    autoDetectBtn: 'पता लगाएं और भविष्यवाणी करें',
+                    manualEntryHeading: '✍️ मैन्युअल मिट्टी प्रविष्टि',
+                    manualEntryText: 'अनुकूलित अनुशंसा के लिए अपने सटीक मिट्टी परीक्षण डेटा (N, P, K, pH) दर्ज करें।',
+                    labelN: 'नाइट्रोजन (N)',
+                    labelP: 'फास्फोरस (P)',
+                    labelK: 'पोटेशियम (K)',
+                    labelPh: 'पीएच (pH)',
+                    placeholderN: 'जैसे, 90',
+                    placeholderP: 'जैसे, 42',
+                    placeholderK: 'जैसे, 43',
+                    placeholderPh: 'जैसे, 6.5',
+                    manualEntryBtn: 'फसलों की भविष्यवाणी करें',
+                    loadingText: 'फसलों की भविष्यवाणी हो रही है...',
+                    recommendationHeading: '✅ अनुशंसित फसलें:',
+                    inputParameters: 'इनपुट पैरामीटर्स:',
+                    locationLabel: 'स्थान',
+                    tempLabel: 'तापमान',
+                    humidityLabel: 'नमी',
+                    rainfallLabel: 'वर्षा',
+                    soilData: 'मिट्टी डेटा',
+                    careGuideBtn: 'देखभाल गाइड प्राप्त करें ✨',
+                    geminiLoading: 'के लिए एक देखभाल गाइड तैयार कर रहा है',
+                    geminiError: 'सामग्री उत्पन्न करने में विफल। कृपया पुन: प्रयास करें।',
+                    geminiUnexpectedError: 'एक अप्रत्याशित त्रुटि हुई:',
+                    apiError: 'सर्वर से कनेक्ट या डेटा प्राप्त नहीं कर सका।',
+                    manualApiError: 'सर्वर से कनेक्ट या भविष्यवाणी प्राप्त नहीं कर सका।'
+                },
+                'bn': {
+                    headerTitle: '🌾 অ্যাগ্রোসাথী - স্মার্ট শস্য সুপারিশ',
+                    headerTagline: 'টেকসই কৃষির জন্য ডেটা ব্যবহার।',
+                    autoDetectHeading: '🌍 স্বয়ংক্রিয় প্যারামিটার',
+                    autoDetectText: "আপনার বর্তমান অবস্থান এবং মাটির ডেটার উপর ভিত্তি করে তাত্ক্ষণিক সুপারিশ পান।",
+                    autoDetectBtn: 'সনাক্ত ও ভবিষ্যদ্বাণী করুন',
+                    manualEntryHeading: '✍️ ম্যানুয়াল মাটি প্রবেশ',
+                    manualEntryText: 'একটি উপযুক্ত সুপারিশের জন্য আপনার সঠিক মাটি পরীক্ষার ডেটা (N, P, K, pH) লিখুন।',
+                    labelN: 'নাইট্রোজেন (N)',
+                    labelP: 'ফসফরাস (P)',
+                    labelK: 'পটাশিয়াম (K)',
+                    labelPh: 'পিএইচ (pH)',
+                    placeholderN: 'যেমন, ৯০',
+                    placeholderP: 'যেমন, ৪২',
+                    placeholderK: 'যেমন, ৪৩',
+                    placeholderPh: 'যেমন, ৬.৫',
+                    manualEntryBtn: 'শস্যের ভবিষ্যদ্বাণী করুন',
+                    loadingText: 'শস্যের ভবিষ্যদ্বাণী হচ্ছে...',
+                    recommendationHeading: '✅ প্রস্তাবিত শস্য:',
+                    inputParameters: 'ইনপুট প্যারামিটার:',
+                    locationLabel: 'অবস্থান',
+                    tempLabel: 'তাপমাত্রা',
+                    humidityLabel: 'আর্দ্রতা',
+                    rainfallLabel: 'বৃষ্টিপাত',
+                    soilData: 'মাটির ডেটা',
+                    careGuideBtn: 'যত্ন নির্দেশিকা পান ✨',
+                    geminiLoading: 'এর জন্য একটি যত্ন নির্দেশিকা তৈরি করা হচ্ছে',
+                    geminiError: 'বিষয়বস্তু তৈরি করতে ব্যর্থ হয়েছে। আবার চেষ্টা করুন।',
+                    geminiUnexpectedError: 'একটি অপ্রত্যাশিত ত্রুটি ঘটেছে:',
+                    apiError: 'সার্ভারের সাথে সংযোগ বা ডেটা পুনরুদ্ধার করা যায়নি।',
+                    manualApiError: 'সার্ভারের সাথে সংযোগ বা ভবিষ্যদ্বাণী করা যায়নি।'
+                }
+            };
+            
+            let currentLang = localStorage.getItem('agroSathiLang') || 'en';
+            langSelector.value = currentLang;
+
+            function setLanguage(lang) {
+                const elements = document.querySelectorAll('[data-translate]');
+                elements.forEach(el => {
+                    const key = el.getAttribute('data-translate');
+                    if (translations[lang] && translations[lang][key]) {
+                        el.textContent = translations[lang][key];
+                    }
+                });
+                
+                const inputs = document.querySelectorAll('input[data-placeholder]');
+                inputs.forEach(input => {
+                    const key = input.getAttribute('data-placeholder');
+                    if (translations[lang] && translations[lang][key]) {
+                        input.placeholder = translations[lang][key];
+                    }
+                });
+                localStorage.setItem('agroSathiLang', lang);
+                currentLang = lang;
+            }
+            
+            // Initial language setting
+            setLanguage(currentLang);
+            langSelector.addEventListener('change', (event) => {
+                setLanguage(event.target.value);
+            });
+
+            // Function to handle the smooth display of results
+            function showResult(element, content) {
+                element.classList.remove('hidden');
+                element.innerHTML = content;
+                setTimeout(() => {
+                    element.classList.add('visible');
+                }, 10);
+            }
+
+            // Function to hide the result box smoothly
+            function hideResult(element) {
+                element.classList.remove('visible');
+                setTimeout(() => {
+                    element.classList.add('hidden');
+                    element.innerHTML = '';
+                }, 500);
+            }
+            
+            // Function to start the loading animation
+            function startLoadingAnimation(element) {
+                hideResult(element);
+                const loadingHtml = `<div class="loader"></div><p style="display:inline-block; margin:0;">${translations[currentLang].loadingText}</p>`;
+                showResult(element, loadingHtml);
+            }
+
+            // Function to build and show the staggered crop list
+            function buildAndShowCrops(element, data) {
+                const cropsListContainer = document.createElement('div');
+                cropsListContainer.className = 'crop-list';
+                
+                data.crops.forEach((crop, index) => {
+                    const cropItem = document.createElement('span');
+                    cropItem.className = 'crop-item';
+                    
+                    const cropName = document.createElement('span');
+                    cropName.textContent = crop;
+                    cropItem.appendChild(cropName);
+                    
+                    const geminiBtn = document.createElement('button');
+                    geminiBtn.className = 'gemini-btn';
+                    geminiBtn.textContent = translations[currentLang].careGuideBtn;
+                    geminiBtn.setAttribute('data-crop', crop);
+                    geminiBtn.addEventListener('click', handleGeminiCall);
+                    cropItem.appendChild(geminiBtn);
+
+                    cropItem.style.animationDelay = `${index * 0.1}s`;
+                    cropsListContainer.appendChild(cropItem);
+                });
+
+                const contentHtml = `
+                    <p><strong>${translations[currentLang].inputParameters}</strong></p>
+                    <p>📍 ${translations[currentLang].locationLabel}: ${data.city || 'N/A'} &nbsp;|&nbsp; 🌡 ${translations[currentLang].tempLabel}: ${data.temperature || 'N/A'}°C<br>
+                    💧 ${translations[currentLang].humidityLabel}: ${data.humidity || 'N/A'}% &nbsp;|&nbsp; 🌧 ${translations[currentLang].rainfallLabel}: ${data.rainfall || 'N/A'}mm</p>
+                    <p>🌱 ${translations[currentLang].soilData}: N:${data.N || 'N/A'}, P:${data.P || 'N/A'}, K:${data.K || 'N/A'}, pH:${data.ph || 'N/A'}</p>
+                    <hr style="border-top: 1px dashed #4caf50;">
+                    <h3>${translations[currentLang].recommendationHeading}</h3>
+                `;
+
+                showResult(element, contentHtml);
+                setTimeout(() => {
+                  element.querySelector('h3').insertAdjacentElement('afterend', cropsListContainer);
+                }, 50);
+            }
+
+            // Function to call the Gemini API
+           async function handleGeminiCall(event) {
+    const cropName = event.target.getAttribute('data-crop');
+
+    geminiOutputSection.classList.remove('hidden');
+    geminiResult.innerHTML = "Loading...";
+
+    try {
+        const response = await fetch("http://127.0.0.1:5000/gemini", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                crop: cropName,
+                lang: currentLang
+            })
+        });
+
+        const data = await response.json();
+        geminiResult.innerHTML = data.reply;
+
+    } catch (err) {
+        geminiResult.innerHTML = "Error loading guide";
+    }
+}
+
+            // ---------- Auto Detect ----------
+            async function autoDetect() {
+                startLoadingAnimation(autoResult);
+
+                try {
+                    const res = await fetch(`${API_BASE}/predict/auto`);
+                    if (!res.ok) throw new Error("Backend error: " + res.status);
+                    const data = await res.json();
+                    
+                    // Call the new function to handle the list animation
+                    buildAndShowCrops(autoResult, data);
+
+                } catch (err) {
+                    showResult(autoResult, `<p style="color:#d32f2f;">❌ **Error:** ${translations[currentLang].apiError} (${err.message})</p>`);
+                }
+            }
+
+            autoBtn.addEventListener("click", autoDetect);
+
+            // ---------- Manual Entry ----------
+            manualForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                startLoadingAnimation(manualResult);
+
+                const N = parseFloat(document.getElementById("N").value);
+                const P = parseFloat(document.getElementById("P").value);
+                const K = parseFloat(document.getElementById("K").value);
+                const ph = parseFloat(document.getElementById("ph").value);
+
+                try {
+                    const res = await fetch(`${API_BASE}/predict/manual`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ N, P, K, ph }),
+                    });
+
+                    if (!res.ok) throw new Error("Backend error: " + res.status);
+                    const data = await res.json();
+                    
+                    // Manually build content for manual entry
+                    const contentHtml = `
+                        <p><strong>${translations[currentLang].inputParameters}</strong></p>
+                        <p>N: <b>${N}</b>, P: <b>${P}</b>, K: <b>${K}</b>, pH: <b>${ph}</b></p>
+                        <hr style="border-top: 1px dashed #009688;">
+                        <h3>${translations[currentLang].recommendationHeading}</h3>
+                    `;
+                    showResult(manualResult, contentHtml);
+
+                    // Then, build and show the staggered crop list
+                    const cropsListContainer = document.createElement('div');
+                    cropsListContainer.className = 'crop-list';
+                    
+                    data.crops.forEach((crop, index) => {
+                        const cropItem = document.createElement('span');
+                        cropItem.className = 'crop-item';
+                        
+                        const cropName = document.createElement('span');
+                        cropName.textContent = crop;
+                        cropItem.appendChild(cropName);
+                        
+                        const geminiBtn = document.createElement('button');
+                        geminiBtn.className = 'gemini-btn';
+                        geminiBtn.textContent = translations[currentLang].careGuideBtn;
+                        geminiBtn.setAttribute('data-crop', crop);
+                        geminiBtn.addEventListener('click', handleGeminiCall);
+                        cropItem.appendChild(geminiBtn);
+                        
+                        cropItem.style.animationDelay = `${index * 0.1}s`;
+                        cropsListContainer.appendChild(cropItem);
+                    });
+
+                    setTimeout(() => {
+                      manualResult.querySelector('h3').insertAdjacentElement('afterend', cropsListContainer);
+                    }, 50);
+
+                } catch (err) {
+                    showResult(manualResult, `<p style="color:#d32f2f;">❌ **Error:** ${translations[currentLang].manualApiError} (${err.message})</p>`);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
